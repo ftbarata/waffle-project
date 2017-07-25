@@ -1,0 +1,85 @@
+from .db_connector import BasicConversationDb
+from zap.settings import *
+from zap.lib.graphs_manager import GraphManager
+import re
+
+
+class BasicConversationFlow:
+
+    def __init__(self, visitor_cellnumber, client_cellnumber):
+        self.visitor_cellnumber = visitor_cellnumber
+        self.client_cellnumber = client_cellnumber
+        self.calldb = BasicConversationDb(self.client_cellnumber)
+        self.back_to_root_keyword = self.calldb.get_back_to_root_keyword()
+
+    def send_message(self, message):
+        print(str(message) + ' -> ' + '{} \n'.format(self.visitor_cellnumber))
+
+    def set_graph_position(self, node_name):
+        self.calldb.set_graph_position_session(node_name, self.visitor_cellnumber)
+
+    def answer(self):
+        current_position = self.calldb.get_graph_position_session(self.visitor_cellnumber)
+        node_message = self.calldb.get_node_message(current_position)
+        self.send_message(node_message)
+
+    def back_to_root(self):
+        self.set_graph_position(root_node_name)
+        self.answer()
+
+    @staticmethod
+    def filtered_input_msg(input_msg):
+        return re.findall(r'\w+', input_msg)
+
+    def navigation(self, input_msg):
+        visitor_is_known = self.calldb.check_if_visitor_is_known(self.visitor_cellnumber)
+        if not visitor_is_known > 0:
+            self.send_message(self.calldb.get_presentation_message())
+            self.set_graph_position(root_node_name)
+            self.answer()
+        else:
+            for word in self.filtered_input_msg(input_msg):
+                if str(word).lower() == self.back_to_root_keyword:
+                    self.back_to_root()
+            else:
+                position = self.calldb.get_graph_position_session(self.visitor_cellnumber)
+                username = self.calldb.get_username()
+                gm = GraphManager(username)
+                keywords_options = gm.get_sucessors(position)
+                if len(keywords_options) == 0:
+                    self.send_message(self.calldb.get_last_leaf_message())
+                else:
+                    matched_word_list = []
+                    for word in self.filtered_input_msg(input_msg):
+                        if str(word).lower() in keywords_options and str(word).lower() not in matched_word_list:
+                            matched_word_list.append(str(word).lower())
+                    if len(matched_word_list) == 1:
+                        self.calldb.set_graph_position_session(matched_word_list[0], self.visitor_cellnumber)
+                        self.answer()
+                    elif len(matched_word_list) > 1:
+                        self.calldb.get_multiple_keywords_matched_found_message()
+                    else:
+                        tempdict = {}
+                        for i in keywords_options:
+                            templist = []
+                            for j in self.calldb.get_node_aliases(i):
+                                templist.append(j)
+                            tempdict[i] = templist
+                        matched_alias_count_list = []
+                        for word in self.filtered_input_msg(input_msg):
+                            breaksignal = 0
+                            for key in tempdict.keys():
+                                for alias in tempdict[key]:
+                                    if str(word).lower() not in matched_alias_count_list and str(word).lower() == alias:
+                                        matched_alias_count_list.append(str(word).lower())
+                                        breaksignal = 1
+                                        break
+                                if breaksignal == 1:
+                                    break
+                        if len(matched_alias_count_list) == 1:
+                            self.calldb.set_graph_position_session(matched_alias_count_list[0], self.visitor_cellnumber)
+                            self.answer()
+                        elif len(matched_alias_count_list) > 1:
+                            self.calldb.get_multiple_aliases_matched_found_message()
+                        else:
+                            self.calldb.get_default_unknown_input_message()

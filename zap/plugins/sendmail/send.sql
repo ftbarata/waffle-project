@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS plugin_sendmail_runtime_messages (
+id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+mail_sent_ok VARCHAR(1000) CHARACTER SET utf8 COLLATE utf8_bin,
+mail_sent_fail VARCHAR(1000) CHARACTER SET utf8 COLLATE utf8_bin,
+invalid_mails_filtered_by_regex VARCHAR(1000) CHARACTER SET utf8 COLLATE utf8_bin,
+PRIMARY KEY(id)
+)
+ENGINE=InnoDB
+DEFAULT CHARACTER SET utf8
+DEFAULT COLLATE utf8_general_ci;

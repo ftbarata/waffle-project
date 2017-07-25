@@ -1,0 +1,162 @@
+import pymysql
+from zap.settings import *
+
+
+class BasicConversationDb:
+
+    def __init__(self, robot_cellnumber):
+        self.robot_cellnumber = robot_cellnumber
+        self.db = pymysql.connect(host_db, user_db, password, db_name, autocommit = True)
+        self.cursor = self.db.cursor()
+        self.user_id = self.cursor.execute("select id from user_info where robot_cellnumber = %s ", self.robot_cellnumber)
+
+    def close(self):
+        self.cursor.close()
+        self.db.close()
+
+    def get_presentation_message(self):
+        self.cursor.execute("select presentation_message from basic_conversation_plugin_main inner join user_info on "
+                       "user_info.id = basic_conversation_plugin_main.user_id where user_info.id = %s ", self.user_id)
+        return self.cursor.fetchall()
+
+    def get_node_message(self, node_name):
+        if node_name:
+            self.cursor.execute("select graph_node_message from basic_conversation_plugin_main inner join user_info on "
+                           "user_info.id = basic_conversation_plugin_main.user_id where "
+                           "user_info.id = %s and graph_node_name = %s ", (self.user_id, node_name))
+            return self.cursor.fetchall()
+        else:
+            print('ERROR: Node name not provided.')
+            return 1
+
+    def check_if_visitor_is_known(self, visitor_cellnumber):
+        self.cursor.execute("select count(id) from session where visitor_cellnumber = %s ", visitor_cellnumber)
+        return self.cursor.fetchall()
+
+    def set_new_user(self, username, firstname, lastname, email, password):
+        self.cursor.execute("insert into user_info(username, firstname, lastname, email, robot_cellnumber, password, active)"
+                            "values(%s, %s, %s, %s, %s, %s, %s)",
+                            (username, firstname, lastname, email, self.robot_cellnumber, password, '1'))
+
+    def set_node_message(self, node, message):
+        self.cursor.execute("insert into basic_conversation_plugin_nodes_messages(user_id, graph_node_name, graph_node_message)"
+                            "values(%s, %s, %s)", (self.user_id, node, message))
+
+    def set_main_messages(self, field, message):
+        self.cursor.execute("select user_id from basic_conversation_plugin_main where user_id = %s", self.user_id)
+        if len(self.cursor.fetchall()) == 0:
+            if field == 'presentation_message':
+                self.cursor.execute("insert into basic_conversation_plugin_main(user_id, presentation_message) values(%s, %s)", (self.user_id, message))
+            elif field == 'goodbye_message':
+                self.cursor.execute("insert into basic_conversation_plugin_main(user_id, goodbye_message) values(%s, %s)", (self.user_id, message))
+            elif field == 'last_leaf_message':
+                self.cursor.execute("insert into basic_conversation_plugin_main(user_id, last_leaf_message) values(%s, %s)", (self.user_id, message))
+            elif field == 'alias_found_message':
+                self.cursor.execute("insert into basic_conversation_plugin_main(user_id, alias_found_message) values(%s, %s)", (self.user_id, message))
+            elif field == 'multiple_keywords_matched_message':
+                self.cursor.execute("insert into basic_conversation_plugin_main(user_id, multiple_keywords_matched_message) values(%s, %s)", (self.user_id, message))
+            elif field == 'multiple_aliases_found_message':
+                self.cursor.execute("insert into basic_conversation_plugin_main(user_id, multiple_aliases_found_message) values(%s, %s)", (self.user_id, message))
+            elif field == 'default_unknown_input_message':
+                self.cursor.execute("insert into basic_conversation_plugin_main(user_id, default_unknown_input_message) values(%s, %s)", (self.user_id, message))
+            elif field == 'back_to_root_keyword':
+                self.cursor.execute("insert into basic_conversation_plugin_main(user_id, back_to_root_keyword) values(%s, %s)", (self.user_id, message))
+            else:
+                print('Incorrect field.')
+        else:
+            if field == 'presentation_message':
+                self.cursor.execute("update basic_conversation_plugin_main set presentation_message = %s where user_id = %s", (message, self.user_id))
+            elif field == 'goodbye_message':
+                self.cursor.execute("update basic_conversation_plugin_main set goodbye_message = %s where user_id = %s", (message, self.user_id))
+            elif field == 'last_leaf_message':
+                self.cursor.execute("update basic_conversation_plugin_main set last_leaf_message = %s where user_id = %s", (message, self.user_id))
+            elif field == 'alias_found_message':
+                self.cursor.execute("update basic_conversation_plugin_main set alias_found_message = %s where user_id = %s", (message, self.user_id))
+            elif field == 'multiple_keywords_matched_message':
+                self.cursor.execute("update basic_conversation_plugin_main set multiple_keywords_matched_message = %s where user_id = %s", (message, self.user_id))
+            elif field == 'multiple_aliases_found_message':
+                self.cursor.execute("update basic_conversation_plugin_main set multiple_aliases_found_message = %s where user_id = %s", (message, self.user_id))
+            elif field == 'default_unknown_input_message':
+                self.cursor.execute("update basic_conversation_plugin_main set default_unknown_input_message = %s where user_id = %s", (message, self.user_id))
+            elif field == 'back_to_root_keyword':
+                self.cursor.execute("update basic_conversation_plugin_main set back_to_root_keyword = %s where user_id = %s", (message, self.user_id))
+            else:
+                print('Incorrect field.')
+
+    def set_graph_position_session(self, node_name, visitor_cellnumber):
+        self.cursor.execute("update session set graph_position = %s "
+                               "where user_id = %s and"
+                               "visitor_cellnumber = %s ", (node_name, self.user_id, visitor_cellnumber))
+
+    def get_graph_position_session(self, visitor_cellnumber):
+        self.cursor.execute("select graph_position from session "
+                       "where user_id = %s and visitor_cellnumber = %s ", (self.user_id, visitor_cellnumber))
+        return self.cursor.fetchone()
+
+    def get_username(self):
+        self.cursor.execute("select username from user_info where id = %s ", self.user_id)
+        return self.cursor.fetchone()
+
+    def get_last_leaf_message(self):
+        self.cursor.execute("select last_leaf_message from basic_conversation_plugin_main inner join "
+                       "user_info on basic_conversation_plugin_main.user_id = user_info.id where user_info.id = %s ", self.user_id)
+        return self.cursor.fetchall()
+
+    def get_record_chat_flag(self):
+        self.cursor.execute("select record_chat from session_config inner join user_info on "
+                       "session_config.user_id = user_info.id where user_info.id = %s ", self.user_id)
+        return self.cursor.fetchall()
+
+    def get_alias_found_message(self):
+        self.cursor.execute("select alias_found_message from basic_conversation_plugin_main inner join "
+                       "user_info on basic_conversation_plugin_main.user_id = user_info.id where user_info.id = %s ",
+                       self.user_id)
+        return self.cursor.fetchall()
+
+    def get_multiple_keywords_matched_found_message(self):
+        self.cursor.execute("select multiple_keywords_matched_message from basic_conversation_plugin_main inner join "
+                            "user_info on basic_conversation_plugin_main.user_id = user_info.id where user_info.id = %s ",
+                            self.user_id)
+        return self.cursor.fetchall()
+
+    def get_multiple_aliases_matched_found_message(self):
+        self.cursor.execute("select multiple_aliases_matched_message from basic_conversation_plugin_main inner join "
+                            "user_info on basic_conversation_plugin_main.user_id = user_info.id where user_info.id = %s ",
+                            self.user_id)
+        return self.cursor.fetchall()
+
+    def get_default_unknown_input_message(self):
+        self.cursor.execute("select default_unknown_input_message from basic_conversation_plugin_main inner join "
+                            "user_info on basic_conversation_plugin_main.user_id = user_info.id where user_info.id = %s ",
+                            self.user_id)
+        return self.cursor.fetchall()
+
+    def get_back_to_root_keyword(self):
+        self.cursor.execute("select back_to_root_keyword from basic_conversation_plugin_main inner join "
+                            "user_info on basic_conversation_plugin_main.user_id = user_info.id where user_info.id = %s ",
+                            self.user_id)
+        return str(self.cursor.fetchall()).lower()
+
+    def get_node_aliases(self, node_name):
+        self.cursor.execute("select graph_node_alias from basic_conversation_plugin_nodes_aliases inner join "
+                            "basic_conversation_plugin_nodes_messages on basic_conversation_plugin_nodes_aliases.bcpnm_id "
+                            "= basic_conversation_plugin_nodes_messages.id "
+                            "where basic_conversation_plugin_nodes_messages.graph_node_name = %s ", node_name)
+
+        return self.cursor.fetchall()
+
+    def add_node_alias(self, node_name, alias):
+        self.cursor.execute("update basic_conversation_plugin_nodes_aliases inner join "
+                            "basic_conversation_plugin_nodes_messages on "
+                            "basic_conversation_plugin_nodes_aliases.bcpnm_id = "
+                            "basic_conversation_plugin_nodes_messages.id "
+                            "set graph_node_alias = %s where"
+                            "basic_conversation_plugin_nodes_messages.graph_node_name = %s", (alias, node_name))
+
+    def del_node_alias(self, node_name, alias):
+        self.cursor.execute("delete from basic_conversation_plugin_nodes_aliases inner join "
+                            "basic_conversation_plugin_nodes_messages on "
+                            "basic_conversation_plugin_nodes_aliases.bcpnm_id = "
+                            "basic_conversation_plugin_nodes_messages.id "
+                            "where basic_conversation_plugin_nodes_aliases.graph_node_alias = %s and"
+                            "basic_conversation_plugin_nodes_messages.graph_node_name = %s", (alias, node_name))

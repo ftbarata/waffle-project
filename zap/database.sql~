@@ -1,0 +1,92 @@
+CREATE TABLE user_info (
+  id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL,
+  firstname VARCHAR(50) NOT NULL,
+  lastname VARCHAR(50) NOT NULL,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  robot_cellnumber BIGINT UNSIGNED,
+  password VARCHAR(50) NOT NULL,
+  active BOOL NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(id)
+)
+ENGINE=InnoDB;
+
+CREATE TABLE plugins(
+  id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(50) NOT NULL,
+  description VARCHAR(200),
+  PRIMARY KEY(id)
+)
+ENGINE=InnoDB;
+
+CREATE TABLE user_plugins(
+  id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id INTEGER UNSIGNED NOT NULL,
+  plugin_id INTEGER UNSIGNED NOT NULL,
+  PRIMARY KEY(id),
+  FOREIGN KEY (user_id) REFERENCES user_info(id),
+  FOREIGN KEY (plugin_id) REFERENCES plugins(id)
+)
+ENGINE=InnoDB;
+
+CREATE TABLE basic_conversation_plugin_main(
+id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+user_id INTEGER UNSIGNED NOT NULL UNIQUE,
+presentation_message VARCHAR(1000),
+goodbye_message VARCHAR(1000),
+last_leaf_message VARCHAR(1000),
+alias_found_message VARCHAR(1000),
+multiple_keywords_matched_message VARCHAR(1000),
+multiple_aliases_found_message VARCHAR(1000),
+default_unknown_input_message VARCHAR(1000),
+back_to_root_keyword VARCHAR(30),
+PRIMARY KEY (id),
+FOREIGN KEY (user_id) REFERENCES user_info(id)
+)
+ENGINE=InnoDB;
+
+CREATE TABLE basic_conversation_plugin_nodes_messages(
+id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+user_id INTEGER UNSIGNED NOT NULL,
+graph_node_name VARCHAR(30),
+graph_node_message VARCHAR(1000),
+PRIMARY KEY (id),
+FOREIGN KEY (user_id) REFERENCES user_info(id),
+CONSTRAINT c UNIQUE (user_id, graph_node_name)
+)
+ENGINE=InnoDB;
+
+CREATE TABLE basic_conversation_plugin_nodes_aliases(
+id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+bcpnm_id INTEGER UNSIGNED NOT NULL,
+graph_node_alias VARCHAR(50),
+PRIMARY KEY (id),
+FOREIGN KEY (bcpnm_id) REFERENCES basic_conversation_plugin_nodes_messages(id)
+)
+ENGINE=InnoDB;
+
+CREATE TABLE session(
+id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+user_id INTEGER UNSIGNED NOT NULL,
+visitor_cellnumber BIGINT UNSIGNED,
+first_ever_hello TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+last_started_session TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+last_message TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+graph_position VARCHAR(30),
+PRIMARY KEY (id),
+FOREIGN KEY (user_id) REFERENCES user_info(id)
+)
+ENGINE=InnoDB;
+
+CREATE TABLE session_config(
+id INTEGER UNSIGNED NOT NULL AUTO_INCREMENT,
+user_id INTEGER UNSIGNED NOT NULL,
+session_timeout_seconds BIGINT UNSIGNED,
+record_chat BOOL,
+record_chat_days INT UNSIGNED,
+days_visitor_is_known INT UNSIGNED,
+PRIMARY KEY (id),
+FOREIGN KEY (user_id) REFERENCES user_info(id)
+)
+ENGINE=InnoDB;

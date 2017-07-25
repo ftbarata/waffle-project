@@ -1,0 +1,22 @@
+[Desktop Entry]
+Terminal=false
+Type=Application
+Categories=PackageManager;System;Settings;
+Name=Welcome
+Comment=Welcome to Ubuntu MATE
+Exec=ubuntu-mate-welcome
+Icon=ubuntu-mate
+OnlyShowIn=MATE;
+StartupNotify=false
+Name[fr]=Bienvenue
+Name[es]=Bienvenido
+Name[de]=Willkommen
+Name[it]=Benvenuto
+Name[nl]=Welkom
+Name[sv]=Välkomna
+Name[ro]=Bine ati venit
+Name[pt]=Bem vinda
+Name[ru]=Добро пожаловать
+Name[ar]=أهلا بك
+Name[ja]=ようこそ
+Name[zh_tw]=歡迎
